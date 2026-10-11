@@ -117,7 +117,7 @@ logging.level.org.springframework.security=DEBUG
 
 | Variable | Description | Example |
 |---|---|---|
-| `DB_URL` | MySQL JDBC connection URL | `jdbc:mysql://localhost:3306/pokecollectordb` |
+| `DB_URL` | MySQL JDBC connection URL | `jdbc:mysql://localhost:3306/pokecollectordb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true` |
 | `DB_USERNAME` | MySQL database username | `pokemon_user` |
 | `DB_PASSWORD` | MySQL database password | Your database password |
 | `MAIL_USERNAME` | Gmail address used to send emails | `your-email@gmail.com` |
