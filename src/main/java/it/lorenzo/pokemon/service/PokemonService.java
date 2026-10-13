@@ -21,6 +21,8 @@ public class PokemonService {
     private PokemonCardRepository cardRepository;
     @Autowired
     private PokemonSetRepository setRepository;
+    @Autowired
+    private RarityRepository rarityRepository;
 
     int itemsPerPage = 25;
 
@@ -68,13 +70,29 @@ public class PokemonService {
                         .collect(Collectors.toList());
             }
         } else {
+            Page<PokemonCard> pageResult;
             Sort sorting = Sort.unsorted();
-            if ("name-asc".equals(sort)) sorting = Sort.by("name").ascending();
-            else if ("name-desc".equals(sort)) sorting = Sort.by("name").descending();
-            else if ("release-new".equals(sort)) sorting = Sort.by("pokemonSet.releaseDate").descending();
-            else if ("release-old".equals(sort)) sorting = Sort.by("pokemonSet.releaseDate").ascending();
 
-            Page<PokemonCard> pageResult = cardRepository.findAll(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
+            if ("name-asc".equals(sort)) {
+                sorting = Sort.by("name").ascending();
+            } else if ("name-desc".equals(sort)) {
+                sorting = Sort.by("name").descending();
+            } else if ("release-new".equals(sort)) {
+                sorting = Sort.by("pokemonSet.releaseDate").descending();
+            } else if ("release-old".equals(sort)) {
+                sorting = Sort.by("pokemonSet.releaseDate").ascending();
+            } else if ("rarity-asc".equals(sort)) {
+                sorting = Sort.by(Sort.Order.asc("r.sortOrder").nullsLast());
+            } else if ("rarity-desc".equals(sort)) {
+                sorting = Sort.by(Sort.Order.desc("r.sortOrder").nullsLast());
+            }
+
+            if ("rarity-asc".equals(sort) || "rarity-desc".equals(sort)) {
+                pageResult = cardRepository.findAllWithRaritySorting(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
+            } else {
+                pageResult = cardRepository.findAll(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
+            }
+
             resultCards = pageResult.getContent().stream()
                     .map(PokemonCardDTO::new)
                     .collect(Collectors.toList());
@@ -94,8 +112,10 @@ public class PokemonService {
 
         return cardRepository.findAllById(ids).stream()
                 .filter(c -> {
-                    if (name != null && !name.isEmpty() && !c.getName().toLowerCase().contains(name.toLowerCase())) return false;
-                    if (illId != null && !illId.isEmpty() && (c.getArtist() == null || !c.getArtist().toLowerCase().contains(illId.toLowerCase()))) return false;
+                    if (name != null && !name.isEmpty() && !c.getName().toLowerCase().contains(name.toLowerCase()))
+                        return false;
+                    if (illId != null && !illId.isEmpty() && (c.getArtist() == null || !c.getArtist().toLowerCase().contains(illId.toLowerCase())))
+                        return false;
                     return setId == null || setId.isEmpty() || (c.getPokemonSet() != null && c.getPokemonSet().getId().equals(setId));
                 })
                 .map(PokemonCardDTO::new)
@@ -119,6 +139,10 @@ public class PokemonService {
                 int result = comp.compare(a.getNumber(), b.getNumber());
                 return "number-asc".equals(sort) ? result : -result;
             });
+        } else if ("rarity-asc".equals(sort)) {
+            allCards.sort(Comparator.comparingInt(c -> getRarityRankFromDb(c.getRarity())));
+        } else if ("rarity-desc".equals(sort)) {
+            allCards.sort(Comparator.comparingInt((PokemonCardDTO c) -> getRarityRankFromDb(c.getRarity())).reversed());
         }
 
         int totalElements = allCards.size();
@@ -135,6 +159,24 @@ public class PokemonService {
         response.put("cards", pagedCards);
         response.put("totalPages", totalPages);
         return response;
+    }
+
+    private Map<String, Integer> rarityRankCache = null;
+
+    private int getRarityRankFromDb(String rarityName) {
+        if (rarityName == null) {
+            return 0;
+        }
+
+        if (rarityRankCache == null) {
+            rarityRankCache = new HashMap<>();
+            List<Rarity> allRarities = rarityRepository.findAll();
+            for (Rarity r : allRarities) {
+                rarityRankCache.put(r.getRarity(), r.getSortOrder() != null ? r.getSortOrder() : 0);
+            }
+        }
+
+        return rarityRankCache.getOrDefault(rarityName, 0);
     }
 
     public Map<String, Object> getMetadataCollection(List<String> userCardIds, String lang) {
