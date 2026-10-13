@@ -27,18 +27,18 @@ public class PokemonController {
 
     @GetMapping("/cards")
     public ResponseEntity<Map<String, Object>> getCards(
-            @RequestParam(defaultValue = "en") String lang,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String illustratorId,
             @RequestParam(required = false) String setId,
             @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String rarity,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(required = false) String username) {
 
         User user = validateUser(username);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        Map<String, Object> serviceResult = pokemonService.getCards(lang, name, illustratorId, setId, sort, page);
+        Map<String, Object> serviceResult = pokemonService.getCards(name, illustratorId, setId, sort, page, rarity);
 
         Map<String, Object> response = new HashMap<>();
         response.put("cards", serviceResult.get("cards"));
@@ -63,7 +63,7 @@ public class PokemonController {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Map<String, Object> result = pokemonService.getFilteredCardsFromIdsPaginated(
-                new ArrayList<>(user.getCollection()), "en", name, illustratorId, setId, sort, page
+                new ArrayList<>(user.getCollection()),name, illustratorId, setId, sort, page
         );
 
         result.put("userCollection", user.getCollection());
@@ -79,7 +79,7 @@ public class PokemonController {
         User user = validateUser(username);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        List<PokemonCardDTO> collectionCards = pokemonService.getFilteredCardsFromIds(new ArrayList<>(user.getCollection()),"en", null, null, null);
+        List<PokemonCardDTO> collectionCards = pokemonService.getFilteredCardsFromIds(new ArrayList<>(user.getCollection()),null, null, null);
 
         return ResponseEntity.ok(buildUserResponse(collectionCards, user));
     }
@@ -97,7 +97,7 @@ public class PokemonController {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Map<String, Object> result = pokemonService.getFilteredCardsFromIdsPaginated(
-                new ArrayList<>(user.getWishlist()), "en", name, illustratorId, setId,sort, page
+                new ArrayList<>(user.getWishlist()), name, illustratorId, setId,sort, page
         );
 
         result.put("userCollection", user.getCollection());
@@ -107,18 +107,18 @@ public class PokemonController {
     }
 
     @GetMapping("/metadata")
-    public ResponseEntity<Map<String, Object>> getMetadata(@RequestParam(defaultValue = "en") String lang) {
+    public ResponseEntity<Map<String, Object>> getMetadata() {
         Map<String, Object> response = new HashMap<>();
-        response.put("illustrators", pokemonService.getIllustrators(lang));
-        response.put("sets", pokemonService.getSets(lang));
+        response.put("illustrators", pokemonService.getIllustrators());
+        response.put("rarities", pokemonService.getRarities());
+        response.put("sets", pokemonService.getSets());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/metadata/collection")
     public ResponseEntity<Map<String, Object>> getMetadataCollection(
             @RequestParam String username,
-            @RequestParam String section,
-            @RequestParam(defaultValue = "en") String lang) {
+            @RequestParam String section ) {
 
         User user = validateUser(username);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -127,7 +127,7 @@ public class PokemonController {
                 new ArrayList<>(user.getCollection()) :
                 new ArrayList<>(user.getWishlist());
 
-        return ResponseEntity.ok(pokemonService.getMetadataCollection(ids, lang));
+        return ResponseEntity.ok(pokemonService.getMetadataCollection(ids));
     }
 
     @PostMapping("/{type}/toggle")

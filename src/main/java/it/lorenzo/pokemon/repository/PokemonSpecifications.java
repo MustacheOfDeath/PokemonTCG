@@ -9,26 +9,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PokemonSpecifications {
-    public static Specification<PokemonCard> filter(String name, String illustratorId, String setId) {
-        return (root, query, cb) -> {
+    public static Specification<PokemonCard> filter(String name, String illustratorId, String setId, String rarity) {
+        return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (Long.class != query.getResultType()) {
-                root.fetch("pokemonSet", JoinType.LEFT);
+            if (name != null && !name.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
-            query.distinct(true);
-
-            if (name != null && !name.isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+            if (illustratorId != null && !illustratorId.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("artist")), "%" + illustratorId.toLowerCase() + "%"));
             }
-            if (illustratorId != null && !illustratorId.isEmpty()) {
-                predicates.add(cb.equal(root.get("artist"), illustratorId));
+            if (setId != null && !setId.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("pokemonSet").get("id"), setId));
             }
-            if ( setId!= null && !setId.isEmpty()) {
-                predicates.add(cb.equal(root.get("pokemonSet").get("id"), setId));
+            if (rarity != null && !rarity.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("rarity"), rarity));
             }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 }

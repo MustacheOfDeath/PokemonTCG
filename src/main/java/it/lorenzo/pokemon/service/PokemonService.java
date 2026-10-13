@@ -26,11 +26,18 @@ public class PokemonService {
 
     int itemsPerPage = 25;
 
-    public List<String> getIllustrators(String lang) {
+    public List<String> getIllustrators() {
         return cardRepository.findAllArtists();
     }
 
-    public List<PokemonSetDTO> getSets(String lang) {
+    public List<String> getRarities() {
+        return rarityRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder"))
+                .stream()
+                .map(Rarity::getRarity)
+                .collect(Collectors.toList());
+    }
+
+    public List<PokemonSetDTO> getSets() {
         return setRepository.findAll().stream()
                 .map(PokemonSetDTO::new)
                 .sorted(Comparator.comparing(PokemonSetDTO::getName, String.CASE_INSENSITIVE_ORDER))
@@ -38,14 +45,14 @@ public class PokemonService {
     }
 
 
-    public Map<String, Object> getCards(String lang, String name, String illustratorId, String setId, String sort, int page) {
+    public Map<String, Object> getCards(String name, String illustratorId, String setId, String sort, int page, String rarity) {
 
-        Specification<PokemonCard> spec = PokemonSpecifications.filter(name, illustratorId, setId);
+        Specification<PokemonCard> spec = PokemonSpecifications.filter(name, illustratorId, setId, rarity);
 
         boolean isNumberSort = "number-asc".equals(sort) || "number-desc".equals(sort);
 
         List<PokemonCardDTO> resultCards;
-        int totalPages = 1;
+        int totalPages;
 
         if (isNumberSort) {
             List<PokemonCard> allCards = cardRepository.findAll(spec);
@@ -107,7 +114,7 @@ public class PokemonService {
     }
 
 
-    public List<PokemonCardDTO> getFilteredCardsFromIds(List<String> ids, String lang, String name, String illId, String setId) {
+    public List<PokemonCardDTO> getFilteredCardsFromIds(List<String> ids,String name, String illId, String setId) {
         if (ids == null || ids.isEmpty()) return Collections.emptyList();
 
         return cardRepository.findAllById(ids).stream()
@@ -122,8 +129,8 @@ public class PokemonService {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, Object> getFilteredCardsFromIdsPaginated(List<String> ids, String lang, String name, String ill, String setId, String sort, int page) {
-        List<PokemonCardDTO> allCards = getFilteredCardsFromIds(ids, lang, name, ill, setId);
+    public Map<String, Object> getFilteredCardsFromIdsPaginated(List<String> ids, String name, String ill, String setId, String sort, int page) {
+        List<PokemonCardDTO> allCards = getFilteredCardsFromIds(ids,name, ill, setId);
 
         if ("name-asc".equals(sort)) {
             allCards.sort(Comparator.comparing(PokemonCardDTO::getName, String.CASE_INSENSITIVE_ORDER));
@@ -179,14 +186,21 @@ public class PokemonService {
         return rarityRankCache.getOrDefault(rarityName, 0);
     }
 
-    public Map<String, Object> getMetadataCollection(List<String> userCardIds, String lang) {
-        List<PokemonCardDTO> userCards = getFilteredCardsFromIds(userCardIds, lang, null, null, null);
+    public Map<String, Object> getMetadataCollection(List<String> userCardIds) {
+        List<PokemonCardDTO> userCards = getFilteredCardsFromIds(userCardIds, null, null, null);
 
         List<String> sortedIllustrators = userCards.stream()
                 .map(PokemonCardDTO::getArtist)
                 .filter(a -> a != null && !a.isEmpty())
                 .distinct()
                 .sorted(String::compareToIgnoreCase)
+                .toList();
+
+        List<String> sortedRarities = userCards.stream()
+                .map(PokemonCardDTO::getRarity)
+                .filter(a -> a != null && !a.isEmpty())
+                .distinct()
+                .sorted(Comparator.comparingInt(this::getRarityRankFromDb))
                 .toList();
 
         List<Map<String, String>> sortedSets = userCards.stream()
@@ -209,6 +223,7 @@ public class PokemonService {
 
         Map<String, Object> response = new HashMap<>();
         response.put("illustrators", sortedIllustrators);
+        response.put("rarities", sortedRarities);
         response.put("sets", sortedSets);
 
         return response;
