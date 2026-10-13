@@ -33,7 +33,7 @@ public class CardProcessorService {
                 processSingleCard(root, path);
             }
         } catch (Exception e) {
-            logError(path, "Errore struttura file: " + e.getMessage());
+            logError(path, "File structure error: " + e.getMessage());
         }
     }
 
@@ -69,7 +69,7 @@ public class CardProcessorService {
                     () -> cardRepository.save(cardFromJson)
             );
         } catch (Exception e) {
-            logError(path, "Errore deserializzazione ID " + node.path("id").asText() + ": " + e.getMessage());
+            logError(path, "Deserialization error for ID " + node.path("id").asText() + ": " + e.getMessage());
         }
     }
 
@@ -80,6 +80,4 @@ public class CardProcessorService {
         logRepository.save(log);
         System.err.println(message);
     }
-
-
 }

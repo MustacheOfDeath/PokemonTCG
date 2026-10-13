@@ -29,6 +29,8 @@ public class DataLoaderService {
 
     public String manualImport() {
         try {
+
+            //TODO: change this variable used for testing
             String BASE_PATH = "E:/Documenti/Programming/pokemon-tcg-data";
 
             File setsFile = new File(BASE_PATH + "/sets/en.json");
@@ -55,11 +57,11 @@ public class DataLoaderService {
                     );
                 });
             }
-            System.out.println("IMPORT DONE!");
-            return "Importazione completata con successo!";
+
+            return "Import done successfully!";
         } catch (Exception e) {
             e.printStackTrace();
-            return "Errore durante l'importazione: " + e.getMessage();
+            return "Error during import: " + e.getMessage();
         }
     }
 
