@@ -49,19 +49,26 @@ public class PokemonService {
 
         Specification<PokemonCard> spec = PokemonSpecifications.filter(name, illustratorId, setId, rarity);
 
-        boolean isNumberSort = "number-asc".equals(sort) || "number-desc".equals(sort);
+        boolean isCustomSort = "number-asc".equals(sort) || "number-desc".equals(sort)
+                || "rarity-asc".equals(sort) || "rarity-desc".equals(sort);
 
         List<PokemonCardDTO> resultCards;
         int totalPages;
 
-        if (isNumberSort) {
+        if (isCustomSort) {
             List<PokemonCard> allCards = cardRepository.findAll(spec);
 
-            NaturalOrderComparator comp = new NaturalOrderComparator();
-            allCards.sort((a, b) -> {
-                int result = comp.compare(a.getNumber(), b.getNumber());
-                return "number-asc".equals(sort) ? result : -result;
-            });
+            if ("number-asc".equals(sort) || "number-desc".equals(sort)) {
+                NaturalOrderComparator comp = new NaturalOrderComparator();
+                allCards.sort((a, b) -> {
+                    int result = comp.compare(a.getNumber(), b.getNumber());
+                    return "number-asc".equals(sort) ? result : -result;
+                });
+            } else if ("rarity-asc".equals(sort)) {
+                allCards.sort(Comparator.comparingInt(c -> getRarityRankFromDb(c.getRarity())));
+            } else if ("rarity-desc".equals(sort)) {
+                allCards.sort(Comparator.comparingInt((PokemonCard c) -> getRarityRankFromDb(c.getRarity())).reversed());
+            }
 
             int totalElements = allCards.size();
             totalPages = (int) Math.ceil((double) totalElements / itemsPerPage);
@@ -88,17 +95,9 @@ public class PokemonService {
                 sorting = Sort.by("pokemonSet.releaseDate").descending();
             } else if ("release-old".equals(sort)) {
                 sorting = Sort.by("pokemonSet.releaseDate").ascending();
-            } else if ("rarity-asc".equals(sort)) {
-                sorting = Sort.by(Sort.Order.asc("r.sortOrder").nullsLast());
-            } else if ("rarity-desc".equals(sort)) {
-                sorting = Sort.by(Sort.Order.desc("r.sortOrder").nullsLast());
             }
 
-            if ("rarity-asc".equals(sort) || "rarity-desc".equals(sort)) {
-                pageResult = cardRepository.findAllWithRaritySorting(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
-            } else {
-                pageResult = cardRepository.findAll(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
-            }
+            pageResult = cardRepository.findAll(spec, PageRequest.of(page - 1, itemsPerPage, sorting));
 
             resultCards = pageResult.getContent().stream()
                     .map(PokemonCardDTO::new)

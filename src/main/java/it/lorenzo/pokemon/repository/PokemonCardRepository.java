@@ -14,8 +14,5 @@ public interface PokemonCardRepository extends JpaRepository<PokemonCard, String
     
     @Query("SELECT DISTINCT c.artist FROM PokemonCard c WHERE c.artist IS NOT NULL ORDER BY c.artist ASC")
     List<String> findAllArtists();
-
-    @Query(value = "SELECT c FROM PokemonCard c LEFT JOIN Rarity r ON c.rarity = r.rarity",
-            countQuery = "SELECT count(c) FROM PokemonCard c")
-    Page<PokemonCard> findAllWithRaritySorting(Specification<PokemonCard> spec, Pageable pageable);
+    
 }
