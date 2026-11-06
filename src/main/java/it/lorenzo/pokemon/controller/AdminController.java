@@ -1,10 +1,13 @@
 package it.lorenzo.pokemon.controller;
 
 import it.lorenzo.pokemon.dto.AdminUserDto;
+import it.lorenzo.pokemon.model.AppSetting;
 import it.lorenzo.pokemon.model.User;
+import it.lorenzo.pokemon.repository.AppSettingRepository;
 import it.lorenzo.pokemon.repository.UserRepository;
 import it.lorenzo.pokemon.service.DataLoaderService;
 import it.lorenzo.pokemon.service.GitService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,9 +37,20 @@ public class AdminController {
     private GitService gitService;
 
     @Autowired
-    DataLoaderService dataLoaderService;
+    private DataLoaderService dataLoaderService;
+
+    @Autowired
+    private AppSettingRepository settingRepository;
+
+    public record ImportStatusResponse(boolean importing, String lastImportTime) {}
 
     private static boolean importing = false;
+    private static String lastImportTime = "Never";
+
+    @PostConstruct
+    public void init() {
+        lastImportTime = readLastImportTime();
+    }
 
     @GetMapping("/users")
     @Transactional(readOnly = true)
@@ -55,6 +71,20 @@ public class AdminController {
             ));
         }
         return ResponseEntity.ok(response);
+    }
+
+    private String readLastImportTime() {
+        return settingRepository.findById("LAST_IMPORT_TIME")
+                .map(AppSetting::getValue)
+                .orElse("Never");
+    }
+
+    private void saveLastImportTime(String timestamp) {
+        AppSetting setting = settingRepository.findById("LAST_IMPORT_TIME")
+                .orElse(new AppSetting());
+        setting.setSettingKey("LAST_IMPORT_TIME");
+        setting.setValue(timestamp);
+        settingRepository.save(setting);
     }
 
     @PutMapping("/users/{username}/change-password")
@@ -152,8 +182,8 @@ public class AdminController {
     }
 
     @GetMapping("/import-status")
-    public ResponseEntity<Boolean> getImportStatus() {
-        return ResponseEntity.ok(importing);
+    public ResponseEntity<ImportStatusResponse> getImportStatus() {
+        return ResponseEntity.ok(new ImportStatusResponse(importing, lastImportTime));
     }
 
     @PostMapping("/import")
@@ -165,10 +195,18 @@ public class AdminController {
         importing = true;
         try {
             String gitResult = gitService.pullLatestData();
+            String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
             if (gitResult.contains("Already up to date.")) {
-                return ResponseEntity.ok(gitResult + "\n---\nNo changes detected. Import skipped.");
+                lastImportTime = now;
+                saveLastImportTime(now);
+                return ResponseEntity.ok(gitResult + "\n---\nNo changes detected in the Git repository. Import skipped.");
             }
+
             String importResult = dataLoaderService.manualImport();
+            lastImportTime = now;
+            saveLastImportTime(now);
+
             return ResponseEntity.ok(gitResult + "\n---\n" + importResult);
         } finally {
             importing = false;
