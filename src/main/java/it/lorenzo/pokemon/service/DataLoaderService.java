@@ -7,12 +7,14 @@ import it.lorenzo.pokemon.repository.PokemonSetRepository;
 import it.lorenzo.pokemon.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -28,6 +30,7 @@ public class DataLoaderService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Transactional
     public String manualImport() {
         try {
             String basePath = System.getenv("POKEMON_DATA_PATH");
@@ -46,9 +49,7 @@ public class DataLoaderService {
                 if (existingOpt.isPresent()) {
                     PokemonSet existingSet = existingOpt.get();
 
-                    boolean isModified = hasSignificantChanges(newSet, existingSet);
-
-                    if (isModified) {
+                    if (hasSignificantChanges(newSet, existingSet)) {
                         CommonUtils.copyNonNullProperties(newSet, existingSet);
                         setRepository.save(existingSet);
                         updatedCount++;
@@ -81,20 +82,19 @@ public class DataLoaderService {
             return "Error during import: " + e.getMessage();
         }
     }
-
+    
     private boolean hasSignificantChanges(PokemonSet incoming, PokemonSet existing) {
-        if (incoming.getName() != null && !incoming.getName().equals(existing.getName())) {
+        if (incoming.getName() != null && !Objects.equals(incoming.getName(), existing.getName())) return true;
+        if (incoming.getSeries() != null && !Objects.equals(incoming.getSeries(), existing.getSeries())) return true;
+        if (incoming.getPrintedTotal() != 0 && incoming.getPrintedTotal() > 0 && !Objects.equals(incoming.getPrintedTotal(), existing.getPrintedTotal()))
             return true;
-        }
-        if (incoming.getSeries() != null && !incoming.getSeries().equals(existing.getSeries())) {
+        if (incoming.getTotal() != 0 && incoming.getTotal() > 0 && !Objects.equals(incoming.getTotal(), existing.getTotal()))
             return true;
-        }
-        if (incoming.getPrintedTotal() > 0 && incoming.getPrintedTotal() != existing.getPrintedTotal()) {
+        if (incoming.getReleaseDate() != null && !Objects.equals(incoming.getReleaseDate(), existing.getReleaseDate()))
             return true;
-        }
-        if (incoming.getTotal() > 0 && incoming.getTotal() != existing.getTotal()) {
+        if (incoming.getPtcgoCode() != null && !Objects.equals(incoming.getPtcgoCode(), existing.getPtcgoCode()))
             return true;
-        }
+        if (incoming.getImages() != null && !Objects.equals(incoming.getImages(), existing.getImages())) return true;
 
         return false;
     }

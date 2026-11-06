@@ -6,8 +6,11 @@ import it.lorenzo.pokemon.model.*;
 import it.lorenzo.pokemon.repository.ImportLogRepository;
 import it.lorenzo.pokemon.repository.PokemonCardRepository;
 import it.lorenzo.pokemon.utils.CommonUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +30,12 @@ public class CardProcessorService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    private static final int BATCH_SIZE = 500;
+
+    @Transactional
     public void processFile(Path path, PokemonSet set) {
         try {
             JsonNode root = objectMapper.readTree(path.toFile());
@@ -92,7 +101,15 @@ public class CardProcessorService {
             }
 
             if (!cardsToSave.isEmpty()) {
-                cardRepository.saveAll(cardsToSave);
+                for (int i = 0; i < cardsToSave.size(); i += BATCH_SIZE) {
+                    int end = Math.min(i + BATCH_SIZE, cardsToSave.size());
+                    List<PokemonCard> batch = cardsToSave.subList(i, end);
+
+                    cardRepository.saveAll(batch);
+
+                    entityManager.flush();
+                    entityManager.clear();
+                }
             }
 
         } catch (Exception e) {
@@ -110,6 +127,7 @@ public class CardProcessorService {
         if (incoming.getFlavorText() != null && !Objects.equals(incoming.getFlavorText(), existing.getFlavorText())) return true;
         if (incoming.getRegulationMark() != null && !Objects.equals(incoming.getRegulationMark(), existing.getRegulationMark())) return true;
         if (incoming.getConvertedRetreatCost() != null && !Objects.equals(incoming.getConvertedRetreatCost(), existing.getConvertedRetreatCost())) return true;
+
         if (incoming.getImages() != null && !Objects.equals(incoming.getImages(), existing.getImages())) return true;
 
         return false;
