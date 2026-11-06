@@ -30,8 +30,7 @@ public class DataLoaderService {
     public String manualImport() {
         try {
 
-            //TODO: change this variable used for testing
-            String BASE_PATH = "E:/Documenti/Programming/pokemon-tcg-data";
+            String BASE_PATH = System.getenv("POKEMON_DATA_PATH");
 
             File setsFile = new File(BASE_PATH + "/sets/en.json");
             List<PokemonSet> incomingSets = objectMapper.readValue(setsFile, new TypeReference<>() {});
