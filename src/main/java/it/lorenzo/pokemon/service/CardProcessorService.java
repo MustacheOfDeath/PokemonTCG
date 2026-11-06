@@ -65,6 +65,8 @@ public class CardProcessorService {
                     PokemonCard cardFromJson = objectMapper.treeToValue(node, PokemonCard.class);
                     if (cardFromJson.getId() == null) continue;
 
+                    cardFromJson.setPokemonSet(set);
+
                     if (cardFromJson.getAttacks() != null) {
                         for (int i = 0; i < cardFromJson.getAttacks().size(); i++) {
                             Attack att = cardFromJson.getAttacks().get(i);
@@ -90,6 +92,8 @@ public class CardProcessorService {
                     if (existingCard == null) {
                         cardsToSave.add(cardFromJson);
                     } else {
+                        existingCard.setPokemonSet(set);
+
                         if (hasCardChanges(cardFromJson, existingCard)) {
                             CommonUtils.copyNonNullProperties(cardFromJson, existingCard);
                             cardsToSave.add(existingCard);
