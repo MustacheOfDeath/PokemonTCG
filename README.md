@@ -73,9 +73,9 @@ git clone https://github.com/MustacheOfDeath/PokemonTCG.git
 cd PokemonTCG/backend
 ```
 
-### 2. Download the Official Pokémon TCG Dataset
+### 2. Download the Pokémon TCG Dataset Fork
 
-PokéCollector uses the JSON files from the official [PokemonTCG/pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data) repository to import expansion sets and cards into MySQL.
+PokéCollector uses the JSON files from the fork [https://github.com/CDEngineer/pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data) repository to import expansion sets and cards into MySQL.
 
 Clone the dataset repository into a separate directory on your computer:
 
@@ -107,7 +107,7 @@ The `DataLoaderService` class contains a `manualImport()` method that reads the 
 Inside `DataLoaderService.java`, locate the `BASE_PATH` variable:
 
 ```java
-String BASE_PATH = "E:/Documenti/Programming/pokemon-tcg-data";
+String BASE_PATH = "C:/Users/YourUsername/Documents/Programming/pokemon-tcg-data";
 ```
 
 Replace the example path with the **absolute path to the directory where you cloned `pokemon-tcg-data`**.
@@ -199,7 +199,8 @@ Configure the following environment variables before starting the backend:
 | `DB_PASSWORD` | MySQL database password | Your database password |
 | `MAIL_USERNAME` | Email account used to send OTP messages | `your-email@gmail.com` |
 | `MAIL_PASSWORD` | Email account app password | Your Gmail app password |
-| `JWT_SECRET` | Secret used to sign JWTs | A securely generated secret |
+| `JWT_SECRET` | Secret used to sign JWTs | A securely generated secret | POKEMON_DATA_PATH
+| `POKEMON_DATA_PATH` | The path to your tcg repository | C:/Users/YourUsername/Documents/Programming/pokemon-tcg-data |
 
 Ensure that MySQL is running, the database exists, and the configured database user has the required permissions.
 
