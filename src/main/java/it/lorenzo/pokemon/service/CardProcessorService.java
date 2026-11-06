@@ -110,16 +110,7 @@ public class CardProcessorService {
         if (incoming.getFlavorText() != null && !Objects.equals(incoming.getFlavorText(), existing.getFlavorText())) return true;
         if (incoming.getRegulationMark() != null && !Objects.equals(incoming.getRegulationMark(), existing.getRegulationMark())) return true;
         if (incoming.getConvertedRetreatCost() != null && !Objects.equals(incoming.getConvertedRetreatCost(), existing.getConvertedRetreatCost())) return true;
-
-        if (incoming.getSubtypes() != null && !Objects.equals(incoming.getSubtypes(), existing.getSubtypes())) return true;
-        if (incoming.getTypes() != null && !Objects.equals(incoming.getTypes(), existing.getTypes())) return true;
-        if (incoming.getRetreatCost() != null && !Objects.equals(incoming.getRetreatCost(), existing.getRetreatCost())) return true;
-        if (incoming.getNationalPokedexNumbers() != null && !Objects.equals(incoming.getNationalPokedexNumbers(), existing.getNationalPokedexNumbers())) return true;
-
         if (incoming.getImages() != null && !Objects.equals(incoming.getImages(), existing.getImages())) return true;
-
-        if (incoming.getAttacks() != null && !Objects.equals(incoming.getAttacks(), existing.getAttacks())) return true;
-        if (incoming.getWeaknesses() != null && !Objects.equals(incoming.getWeaknesses(), existing.getWeaknesses())) return true;
 
         return false;
     }
