@@ -34,6 +34,8 @@ public class AdminController {
     @Autowired
     DataLoaderService dataLoaderService;
 
+    private static boolean importing = false;
+
     @GetMapping("/users")
     @Transactional(readOnly = true)
     public ResponseEntity<List<AdminUserDto>> getAllUsers() {
@@ -149,12 +151,27 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/import-status")
+    public ResponseEntity<Boolean> getImportStatus() {
+        return ResponseEntity.ok(importing);
+    }
+
     @PostMapping("/import")
     public ResponseEntity<String> importData() {
+        if (importing) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Import already in progress.");
+        }
 
-        String gitResult = gitService.pullLatestData();
-
-        String importResult = dataLoaderService.manualImport();
-        return ResponseEntity.ok(gitResult + "\n---\n" + importResult);
+        importing = true;
+        try {
+            String gitResult = gitService.pullLatestData();
+            if (gitResult.contains("Already up to date.")) {
+                return ResponseEntity.ok(gitResult + "\n---\nNo changes detected. Import skipped.");
+            }
+            String importResult = dataLoaderService.manualImport();
+            return ResponseEntity.ok(gitResult + "\n---\n" + importResult);
+        } finally {
+            importing = false;
+        }
     }
 }

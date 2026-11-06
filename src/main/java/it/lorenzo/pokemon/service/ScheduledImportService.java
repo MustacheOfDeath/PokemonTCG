@@ -22,6 +22,13 @@ public class ScheduledImportService {
             String gitResult = gitService.pullLatestData();
             System.out.println(gitResult);
 
+            if (gitResult.contains("Already up to date.")) {
+                System.out.println("No changes detected in the Git repository. Skipping import process.");
+                System.out.println("=== Scheduled daily check finished (No updates) ===");
+                return;
+            }
+
+            System.out.println("Changes detected! Starting import process...");
             String importResult = dataLoaderService.manualImport();
             System.out.println(importResult);
 
