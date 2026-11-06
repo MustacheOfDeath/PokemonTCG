@@ -4,6 +4,7 @@ import it.lorenzo.pokemon.dto.AdminUserDto;
 import it.lorenzo.pokemon.model.User;
 import it.lorenzo.pokemon.repository.UserRepository;
 import it.lorenzo.pokemon.service.DataLoaderService;
+import it.lorenzo.pokemon.service.GitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,9 @@ public class AdminController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private GitService gitService;
 
     @Autowired
     DataLoaderService dataLoaderService;
@@ -147,7 +151,10 @@ public class AdminController {
 
     @PostMapping("/import")
     public ResponseEntity<String> importData() {
-        String result = dataLoaderService.manualImport();
-        return ResponseEntity.ok(result);
+
+        String gitResult = gitService.pullLatestData();
+
+        String importResult = dataLoaderService.manualImport();
+        return ResponseEntity.ok(gitResult + "\n---\n" + importResult);
     }
 }
